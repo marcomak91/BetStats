@@ -1,0 +1,64 @@
+﻿@model IEnumerable<BetStats.Models.MatchDetail>
+
+@{
+    ViewBag.Title = "Dettagli Match";
+}
+
+<h2>@ViewBag.TeamName</h2>
+
+<table id="matchDetailsTable" class="display">
+    <thead>
+        <tr>
+            <th>Data Partita</th>
+            <th>Competizione</th>
+            <th>Partita</th>
+            <th>Risultato</th>
+            <th>Pari/Dispari</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var matchDetail in Model)
+        {
+            <tr>
+                <td>@matchDetail.MatchDate.ToString("dd/MM/yyyy")</td>
+                <td>@matchDetail.League</td>
+                <td>@matchDetail.Matchup</td>
+                <td>@matchDetail.ResultRegularTime</td>
+                <td>@matchDetail.EvenOdd</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    //parser personalizzato per DataTables
+    $.fn.dataTable.ext.type.order['date-dd-mm-yyyy-pre'] = function (d) {
+        var parts = d.split('/');
+        return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+    };
+
+    $(document).ready(function () {
+        $('#matchDetailsTable').DataTable({
+            "paging": false,
+            "ordering": true,
+            "info": false,
+            "searching": true,
+            "order": [[0, "desc"]],
+            "columnDefs": [
+                {
+                    "targets": 0, // L'indice della colonna Date (partendo da 0)
+                    "type": "date-dd-mm-yyyy"
+                }
+            ],
+            "language": {
+                "search": "Cerca:",
+                "lengthMenu": "Mostra _MENU_ record per pagina",
+                "zeroRecords": "Nessun record trovato",
+                "info": "Pagina _PAGE_ di _PAGES_",
+                "infoEmpty": "Nessun record disponibile",
+                "infoFiltered": "(filtrati da _MAX_ record totali)"
+            }
+        });
+    });
+</script>
+

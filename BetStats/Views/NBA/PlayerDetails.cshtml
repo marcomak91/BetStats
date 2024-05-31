@@ -1,0 +1,70 @@
+﻿@model IEnumerable<BetStats.Models.GameLog>
+
+@{
+    ViewBag.Title = "Dettagli Giocatore";
+}
+
+<h2>@ViewBag.PlayerName</h2>
+
+<table id="playerDetailsTable" class="display">
+    <thead>
+        <tr>
+            <th>Data Partita</th>
+            <th>Partita</th>
+            <th>Minuti giocati</th>
+            <th>Punti</th>
+            <th>Assist</th>
+            <th>Rimbalzi</th>
+            <th>Stoppate</th>
+            <th>Rubate</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var gameLog in Model)
+        {
+            <tr>
+                <td>@gameLog.GameDate.ToString("dd/MM/yyyy")</td>
+                <td>@gameLog.Matchup</td>
+                <td>@gameLog.Minutes</td>
+                <td>@gameLog.Points</td>
+                <td>@gameLog.Assists</td>
+                <td>@gameLog.Rebounds</td>
+                <td>@gameLog.Blocks</td>
+                <td>@gameLog.Steals</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    //parser personalizzato per DataTables
+    $.fn.dataTable.ext.type.order['date-dd-mm-yyyy-pre'] = function (d) {
+        var parts = d.split('/');
+        return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+    };
+
+    $(document).ready(function () {
+        $('#playerDetailsTable').DataTable({
+            "paging": false,
+            "ordering": true,
+            "info": false,
+            "searching": true,
+            "order": [[0, "desc"]],
+            "columnDefs": [
+                {
+                    "targets": 0, // L'indice della colonna Date (partendo da 0)
+                    "type": "date-dd-mm-yyyy"
+                }
+            ],
+            "language": {
+                "search": "Cerca:",
+                "lengthMenu": "Mostra _MENU_ record per pagina",
+                "zeroRecords": "Nessun record trovato",
+                "info": "Pagina _PAGE_ di _PAGES_",
+                "infoEmpty": "Nessun record disponibile",
+                "infoFiltered": "(filtrati da _MAX_ record totali)"
+            }
+        });
+    });
+</script>
+

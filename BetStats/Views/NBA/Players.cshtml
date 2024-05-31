@@ -1,0 +1,48 @@
+﻿@model IEnumerable<BetStats.Models.Player>
+
+@{
+    ViewBag.Title = "Lista Giocatori";
+}
+
+<h2>@ViewBag.TeamName</h2>
+
+<table id="PlayersTable" class="display">
+    <thead>
+        <tr>
+            <th>Nome giocatore</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var player in Model)
+        {
+            <tr>
+                <td><a href="@Url.Action("PlayerDetails", "NBA", new { playerId = player.PlayerID, playerName = player.PlayerName })">@player.PlayerName</a></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    //parser personalizzato per DataTables
+    $.fn.dataTable.ext.type.order['date-dd-mm-yyyy-pre'] = function (d) {
+        var parts = d.split('/');
+        return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+    };
+
+    $(document).ready(function () {
+        $('#PlayersTable').DataTable({
+            "paging": false,
+            "ordering": true,
+            "info": false,
+            "searching": true,
+            "language": {
+                "search": "Cerca:",
+                "lengthMenu": "Mostra _MENU_ record per pagina",
+                "zeroRecords": "Nessun record trovato",
+                "info": "Pagina _PAGE_ di _PAGES_",
+                "infoEmpty": "Nessun record disponibile",
+                "infoFiltered": "(filtrati da _MAX_ record totali)"
+            }
+        });
+    });
+</script>
