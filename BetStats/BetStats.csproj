@@ -170,6 +170,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\ApiRateLimiter.cs" />
     <Compile Include="Models\MatchDetail.cs" />
     <Compile Include="Models\League.cs" />
     <Compile Include="Models\Team.cs" />

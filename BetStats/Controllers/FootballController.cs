@@ -13,11 +13,12 @@ public class FootballController : Controller
 {
     private readonly HttpClient _httpClient;
     private static readonly ObjectCache _cache = MemoryCache.Default;
+    private static readonly ApiRateLimiter _rateLimiter = new ApiRateLimiter(10, TimeSpan.FromMinutes(1));
 
     public FootballController()
     {
         _httpClient = new HttpClient();
-        _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", "abcedb852509f1253b36297ffcea29f5");
+        _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", "1b977bab4ca14472ae25f00bf99a9cc3");
         _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", "v3.football.api-sports.io");
     }
 
@@ -35,26 +36,35 @@ public class FootballController : Controller
         {
             var matchDetails = await GetMatchDetailsLogsAsync(team.TeamID, currentSeason);
 
-            // Ordinare i dettagli della partita per data decrescente
-            var orderedMatchDetails = matchDetails.OrderByDescending(md => md.MatchDate).ToList();
-
-            // Trova la sequenza più lunga di occorrenze consecutive del valore EvenOdd più recente
-            string lastEvenOdd = orderedMatchDetails.First().EvenOdd;
-            int count = 0;
-
-            foreach (var detail in orderedMatchDetails)
+            if (matchDetails.Any())
             {
-                if (detail.EvenOdd == lastEvenOdd)
+                // Ordinare i dettagli della partita per data decrescente
+                var orderedMatchDetails = matchDetails.OrderByDescending(md => md.MatchDate).ToList();
+
+                // Trova la sequenza più lunga di occorrenze consecutive del valore EvenOdd più recente
+                string lastEvenOdd = orderedMatchDetails.First().EvenOdd;
+                int count = 0;
+
+                foreach (var detail in orderedMatchDetails)
                 {
-                    count++;
+                    if (detail.EvenOdd == lastEvenOdd)
+                    {
+                        count++;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
-                else
-                {
-                    break;
-                }
+
+                team.LastEvenOddCount = count + " " + lastEvenOdd;
             }
 
-            team.LastEvenOddCount = count + " " + lastEvenOdd;
+            else
+            {
+                team.LastEvenOddCount = "N/A";
+            }
+
         }).ToList();
 
         await Task.WhenAll(tasks);
@@ -81,23 +91,33 @@ public class FootballController : Controller
             return (List<League>)_cache.Get(cacheKey);
         }
 
+        await _rateLimiter.WaitForNextRequestAsync();
+
         string url = "https://v3.football.api-sports.io/leagues?current=true";
         var response = await _httpClient.GetStringAsync(url);
         JObject json = JObject.Parse(response);
 
         var leagues = new List<League>();
-        foreach (var league in json["response"])
+
+        if (json["errors"].Count() > 0)
         {
-            if (DateTime.Now >= DateTime.Parse(league["seasons"][0]["start"].ToString()) && DateTime.Now <= DateTime.Parse(league["seasons"][0]["end"].ToString()))
+            throw new Exception(json["errors"].ToString());
+        }
+        else
+        {
+            foreach (var league in json["response"])
             {
-                leagues.Add(new League
+                if (DateTime.Now >= DateTime.Parse(league["seasons"][0]["start"].ToString()) && DateTime.Now <= DateTime.Parse(league["seasons"][0]["end"].ToString()))
                 {
-                    LeagueID = league["league"]["id"].ToString(),
-                    LeagueName = league["league"]["name"].ToString(),
-                    LeagueNation = league["country"]["name"].ToString(),
-                    LeagueType = league["league"]["type"].ToString(),
-                    CurrentSeason = league["seasons"][0]["year"].ToString()
-                });
+                    leagues.Add(new League
+                    {
+                        LeagueID = league["league"]["id"].ToString(),
+                        LeagueName = league["league"]["name"].ToString(),
+                        LeagueNation = league["country"]["name"].ToString(),
+                        LeagueType = league["league"]["type"].ToString(),
+                        CurrentSeason = league["seasons"][0]["year"].ToString()
+                    });
+                }
             }
         }
 
@@ -116,19 +136,29 @@ public class FootballController : Controller
             return (List<Team>)_cache.Get(cacheKey);
         }
 
+        await _rateLimiter.WaitForNextRequestAsync();
+
         string url = $"https://v3.football.api-sports.io/teams?league={leagueId}&season={currentSeason}";
         var response = await _httpClient.GetStringAsync(url);
         JObject json = JObject.Parse(response);
 
         var teams = new List<Team>();
-        foreach (var team in json["response"])
+
+        if (json["errors"].Count() > 0)
         {
-            teams.Add(new Team
+            throw new Exception(json["errors"].ToString());
+        }
+        else
+        {
+            foreach (var team in json["response"])
             {
-                TeamID = team["team"]["id"].ToString(),
-                TeamName = team["team"]["name"].ToString(),
-                CurrentSeason = currentSeason
-            });
+                teams.Add(new Team
+                {
+                    TeamID = team["team"]["id"].ToString(),
+                    TeamName = team["team"]["name"].ToString(),
+                    CurrentSeason = currentSeason
+                });
+            }
         }
 
         _cache.Set(cacheKey, teams, DateTimeOffset.Now.AddHours(1));
@@ -146,24 +176,34 @@ public class FootballController : Controller
             return (List<MatchDetail>)_cache.Get(cacheKey);
         }
 
+        await _rateLimiter.WaitForNextRequestAsync();
+
         string url = $"https://v3.football.api-sports.io/fixtures?team={teamId}&season={season}&status=FT-AET-PEN";
         var response = await _httpClient.GetStringAsync(url);
         JObject json = JObject.Parse(response);
 
         var matchDetails = new List<MatchDetail>();
-        foreach (var match in json["response"])
+
+        if (json["errors"].Count() > 0)
         {
-            matchDetails.Add(new MatchDetail
+            throw new Exception(json["errors"].ToString());
+        }
+        else
+        {
+            foreach (var match in json["response"])
             {
-                MatchID = match["fixture"]["id"].ToString(),
-                MatchDate = DateTime.Parse(match["fixture"]["date"].ToString()),
-                Referee = match["fixture"]["referee"].ToString(),
-                Status = match["fixture"]["status"]["long"].ToString(),
-                League = match["league"]["name"].ToString() + " (" + match["league"]["country"].ToString() + ")",
-                Matchup = match["teams"]["home"]["name"].ToString() + " - " + match["teams"]["away"]["name"].ToString(),
-                ResultRegularTime = match["score"]["fulltime"]["home"].ToString() + " - " + match["score"]["fulltime"]["away"].ToString(),
-                EvenOdd = ((int.Parse(match["score"]["fulltime"]["home"].ToString()) + int.Parse(match["score"]["fulltime"]["away"].ToString())) % 2 == 0) ? "P" : "D"
-            });
+                matchDetails.Add(new MatchDetail
+                {
+                    MatchID = match["fixture"]["id"].ToString(),
+                    MatchDate = DateTime.Parse(match["fixture"]["date"].ToString()),
+                    Referee = match["fixture"]["referee"].ToString(),
+                    Status = match["fixture"]["status"]["long"].ToString(),
+                    League = match["league"]["name"].ToString() + " (" + match["league"]["country"].ToString() + ")",
+                    Matchup = match["teams"]["home"]["name"].ToString() + " - " + match["teams"]["away"]["name"].ToString(),
+                    ResultRegularTime = match["score"]["fulltime"]["home"].ToString() + " - " + match["score"]["fulltime"]["away"].ToString(),
+                    EvenOdd = ((int.Parse(match["score"]["fulltime"]["home"].ToString()) + int.Parse(match["score"]["fulltime"]["away"].ToString())) % 2 == 0) ? "P" : "D"
+                });
+            }
         }
         _cache.Set(cacheKey, matchDetails, DateTimeOffset.Now.AddHours(1));
         return matchDetails;
