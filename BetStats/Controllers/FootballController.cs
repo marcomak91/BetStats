@@ -18,7 +18,7 @@ public class FootballController : Controller
     public FootballController()
     {
         _httpClient = new HttpClient();
-        _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", "1b977bab4ca14472ae25f00bf99a9cc3");
+        _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", "");
         _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", "v3.football.api-sports.io");
     }
 
