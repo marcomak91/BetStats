@@ -26,9 +26,9 @@
 
 <script>
     //parser personalizzato per DataTables
-    $.fn.dataTable.ext.type.order['date-dd-mm-yyyy-pre'] = function (d) {
-        var parts = d.split('/');
-        return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+    $.fn.dataTable.ext.type.order['even-odd-pre'] = function (d) {
+        var num = d.split(' ')[0];
+        return parseInt(num, 10);
     };
 
     $(document).ready(function () {
@@ -38,6 +38,12 @@
             "info": false,
             "searching": true,
             "order": [[1, "desc"]],
+            "columnDefs": [
+                {
+                    "targets": 1,
+                    "type": "even-odd"
+                }
+            ], 
             "language": {
                 "search": "Cerca:",
                 "lengthMenu": "Mostra _MENU_ record per pagina",
