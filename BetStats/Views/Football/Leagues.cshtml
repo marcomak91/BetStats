@@ -4,6 +4,12 @@
     ViewBag.Title = "Lista Competizioni";
 }
 
+<style>
+    .dataTables_filter {
+        display: none;
+    }
+</style>
+
 <h2>Lista Competizioni</h2>
 
 <table id="LeaguesTable" class="display">
@@ -12,6 +18,11 @@
             <th>Nome competizione</th>
             <th>Nazione</th>
             <th>Tipo competizione</th>
+        </tr>
+        <tr class="filters">
+            <th><input type="text" placeholder="Cerca Nome competizione" /></th>
+            <th><input type="text" placeholder="Cerca Nazione" /></th>
+            <th><input type="text" placeholder="Cerca Tipo competizione" /></th>
         </tr>
     </thead>
     <tbody>
@@ -27,18 +38,13 @@
 </table>
 
 <script>
-    //parser personalizzato per DataTables
-    $.fn.dataTable.ext.type.order['date-dd-mm-yyyy-pre'] = function (d) {
-        var parts = d.split('/');
-        return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
-    };
-
     $(document).ready(function () {
-        $('#LeaguesTable').DataTable({
+        var table = $('#LeaguesTable').DataTable({
             "paging": false,
             "ordering": true,
             "info": false,
             "searching": true,
+            "orderCellsTop": true,
             "language": {
                 "search": "Cerca:",
                 "lengthMenu": "Mostra _MENU_ record per pagina",
@@ -47,6 +53,18 @@
                 "infoEmpty": "Nessun record disponibile",
                 "infoFiltered": "(filtrati da _MAX_ record totali)"
             }
+        });
+
+        // Aggiunta dei filtri per ogni colonna
+        $('#LeaguesTable thead tr.filters th').each(function (i) {
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search(this.value)
+                        .draw();
+                }
+            });
         });
     });
 </script>
