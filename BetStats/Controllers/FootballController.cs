@@ -13,12 +13,12 @@ public class FootballController : Controller
 {
     private readonly HttpClient _httpClient;
     private static readonly ObjectCache _cache = MemoryCache.Default;
-    private static readonly ApiRateLimiter _rateLimiter = new ApiRateLimiter(10, TimeSpan.FromMinutes(1));
+    private static readonly ApiRateLimiter _rateLimiter = new ApiRateLimiter(9, TimeSpan.FromMinutes(1));
 
     public FootballController()
     {
         _httpClient = new HttpClient();
-        _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", "");
+        _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKeyHelper.GetApiKey());
         _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", "v3.football.api-sports.io");
     }
 

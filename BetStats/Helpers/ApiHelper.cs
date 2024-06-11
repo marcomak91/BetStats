@@ -1,8 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+public static class ApiKeyHelper
+{
+    public static string GetApiKey()
+    {
+        // Leggi il percorso del file dal web.config
+        string apiKeyFilePath = ConfigurationManager.AppSettings["ApiKeyFilePath"];
+        if (string.IsNullOrEmpty(apiKeyFilePath))
+        {
+            throw new InvalidOperationException("Il percorso del file API key non è configurato nel web.config.");
+        }
+
+        // Leggi l'API key dal file
+        if (!File.Exists(apiKeyFilePath))
+        {
+            throw new FileNotFoundException("Il file contenente l'API key non è stato trovato.", apiKeyFilePath);
+        }
+
+        return File.ReadAllText(apiKeyFilePath).Trim();
+    }
+}
+
 
 public class ApiRateLimiter
 {
