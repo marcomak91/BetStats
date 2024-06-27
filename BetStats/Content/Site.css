@@ -1,5 +1,5 @@
 ﻿body {
-    padding-top: 50px;
+    padding-top: 65px;
     padding-bottom: 20px;
 }
 
@@ -27,4 +27,8 @@ textarea {
 .navbar-inverse .navbar-toggle:focus {
     background-color: #777;
     border-color: #fff
+}
+
+.modal-dialog {
+    max-width: 1100px;
 }

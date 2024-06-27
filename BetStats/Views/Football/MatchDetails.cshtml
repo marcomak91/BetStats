@@ -22,13 +22,32 @@
             <tr>
                 <td>@matchDetail.MatchDate.ToString("dd/MM/yyyy")</td>
                 <td>@matchDetail.League</td>
-                <td>@matchDetail.Matchup</td>
+                <td>
+                    <a href="#" class="match-detail-link" data-matchid="@matchDetail.MatchID">@matchDetail.Matchup</a>
+                </td>
                 <td>@matchDetail.ResultRegularTime</td>
                 <td>@matchDetail.EvenOdd</td>
             </tr>
         }
     </tbody>
 </table>
+
+<!-- Modal -->
+<div class="modal fade" id="matchDetailModal" tabindex="-1" role="dialog" aria-labelledby="matchDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="matchDetailModalLabel">Dettagli Match</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     //parser personalizzato per DataTables
@@ -38,6 +57,7 @@
     };
 
     $(document).ready(function () {
+
         $('#matchDetailsTable').DataTable({
             "paging": false,
             "ordering": true,
@@ -59,6 +79,30 @@
                 "infoFiltered": "(filtrati da _MAX_ record totali)"
             }
         });
+
+        // Gestione click sul link Matchup
+        $('.match-detail-link').on('click', function (e) {
+            e.preventDefault();
+            var matchId = $(this).data('matchid');
+            var matchTitle = $(this).text();
+        
+            // Carica i dettagli del match
+            $.ajax({
+                url: '@Url.Action("MatchStats", "Football")',
+                type: 'GET',
+                data: { matchId: matchId },
+                success: function (data) {
+                    $('#matchDetailModal .modal-title').text(matchTitle);
+                    $('#matchDetailModal .modal-body').html(data);
+                    $('#matchDetailModal').modal('show');
+                },
+                error: function (xhr) {
+                    console.log(xhr.responseText);
+                    alert('Errore durante il caricamento delle statistiche');
+                }
+            });
+        });
+
     });
 </script>
 

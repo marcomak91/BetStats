@@ -14,6 +14,9 @@ public class FootballController : Controller
     private readonly HttpClient _httpClient;
     private static readonly ObjectCache _cache = MemoryCache.Default;
     private static readonly ApiRateLimiter _rateLimiter = new ApiRateLimiter(9, TimeSpan.FromMinutes(1));
+    private LocalCacheManager _localCacheManagerMatchStats;
+    private LocalCacheManager _localCacheManagerMatchPlayerStats;
+    private static List<MatchDetail> _matchDetails = new List<MatchDetail>();
 
     public FootballController()
     {
@@ -24,12 +27,16 @@ public class FootballController : Controller
 
     public async Task<ActionResult> Leagues()
     {
+        InitializeCacheManager();
+
         var leagues = await GetLeaguesAsync();
         return View(leagues);
     }
 
     public async Task<ActionResult> Teams(string leagueId, string leagueName, string currentSeason)
     {
+        InitializeCacheManager();
+
         var teams = await GetTeamsAsync(leagueId, currentSeason);
 
         var tasks = teams.Select(async team =>
@@ -59,7 +66,6 @@ public class FootballController : Controller
 
                 team.LastEvenOddCount = count + " " + lastEvenOdd;
             }
-
             else
             {
                 team.LastEvenOddCount = "N/A";
@@ -75,9 +81,25 @@ public class FootballController : Controller
 
     public async Task<ActionResult> MatchDetails(string teamId, string teamName, string currentSeason)
     {
+        InitializeCacheManager();
+
         var matchDetails = await GetMatchDetailsLogsAsync(teamId, currentSeason);
+        _matchDetails = matchDetails;
         ViewBag.TeamName = teamName;
         return View(matchDetails);
+    }
+
+    public ActionResult MatchStats(string matchId)
+    {
+        InitializeCacheManager();
+
+        var matchDetail = _matchDetails.FirstOrDefault(m => m.MatchID == matchId);
+        if (matchDetail == null)
+        {
+            return HttpNotFound();
+        }
+
+        return PartialView("_MatchStats", matchDetail);
     }
 
     private async Task<List<League>> GetLeaguesAsync()
@@ -192,20 +214,106 @@ public class FootballController : Controller
         {
             foreach (var match in json["response"])
             {
+                var matchId = match["fixture"]["id"].ToString();
+
+                JToken matchStats = await _localCacheManagerMatchStats.CheckStatsExistsAsync(matchId) ?
+                    await _localCacheManagerMatchStats.GetStatsFromCacheAsync(matchId) :
+                    await GetMatchStatsAsync(matchId);
+
+                if (matchStats != null && !await _localCacheManagerMatchStats.CheckStatsExistsAsync(matchId))
+                {
+                    await _localCacheManagerMatchStats.AddStatsToCacheAsync(matchId, matchStats);
+                }
+
                 matchDetails.Add(new MatchDetail
                 {
-                    MatchID = match["fixture"]["id"].ToString(),
+                    MatchID = matchId,
                     MatchDate = DateTime.Parse(match["fixture"]["date"].ToString()),
                     Referee = match["fixture"]["referee"].ToString(),
                     Status = match["fixture"]["status"]["long"].ToString(),
                     League = match["league"]["name"].ToString() + " (" + match["league"]["country"].ToString() + ")",
                     Matchup = match["teams"]["home"]["name"].ToString() + " - " + match["teams"]["away"]["name"].ToString(),
                     ResultRegularTime = match["score"]["fulltime"]["home"].ToString() + " - " + match["score"]["fulltime"]["away"].ToString(),
-                    EvenOdd = ((int.Parse(match["score"]["fulltime"]["home"].ToString()) + int.Parse(match["score"]["fulltime"]["away"].ToString())) % 2 == 0) ? "P" : "D"
+                    EvenOdd = ((int.Parse(match["score"]["fulltime"]["home"].ToString()) + int.Parse(match["score"]["fulltime"]["away"].ToString())) % 2 == 0) ? "P" : "D",
+                    Team1Stats = matchStats != null && matchStats.Count() > 0 ? new Stats()
+                    {
+                        Id = matchStats[0]["team"]["id"].ToString(),
+                        CornerKicks = GetStatValue(matchStats[0]["statistics"], "Corner Kicks"),
+                        ShotsOnGoal = GetStatValue(matchStats[0]["statistics"], "Shots on Goal"),
+                        ShotsOffGoal = GetStatValue(matchStats[0]["statistics"], "Shots off Goal"),
+                        GoalkeeperSaves = GetStatValue(matchStats[0]["statistics"], "Goalkeeper Saves"),
+                        Fouls = GetStatValue(matchStats[0]["statistics"], "Fouls"),
+                        YellowCards = GetStatValue(matchStats[0]["statistics"], "Yellow Cards"),
+                        RedCards = GetStatValue(matchStats[0]["statistics"], "Red Cards"),
+                        Offsides = GetStatValue(matchStats[0]["statistics"], "Offsides")
+                    } : null,
+                    Team2Stats = matchStats != null && matchStats.Count() > 0 ? new Stats()
+                    {
+                        Id = matchStats[1]["team"]["id"].ToString(),
+                        CornerKicks = GetStatValue(matchStats[1]["statistics"], "Corner Kicks"),
+                        ShotsOnGoal = GetStatValue(matchStats[1]["statistics"], "Shots on Goal"),
+                        ShotsOffGoal = GetStatValue(matchStats[1]["statistics"], "Shots off Goal"),
+                        GoalkeeperSaves = GetStatValue(matchStats[1]["statistics"], "Goalkeeper Saves"),
+                        Fouls = GetStatValue(matchStats[1]["statistics"], "Fouls"),
+                        YellowCards = GetStatValue(matchStats[1]["statistics"], "Yellow Cards"),
+                        RedCards = GetStatValue(matchStats[1]["statistics"], "Red Cards"),
+                        Offsides = GetStatValue(matchStats[1]["statistics"], "Offsides")
+                    } : null
                 });
             }
         }
         _cache.Set(cacheKey, matchDetails, DateTimeOffset.Now.AddHours(1));
         return matchDetails;
+    }
+
+    private async Task<JToken> GetMatchStatsAsync(string matchId)
+    {
+        await _rateLimiter.WaitForNextRequestAsync();
+        string url = $"https://v3.football.api-sports.io/fixtures/statistics?fixture={matchId}";
+        var response = await _httpClient.GetStringAsync(url);
+        JObject json = JObject.Parse(response);
+
+        if (json["errors"].Count() > 0)
+        {
+            throw new Exception(json["errors"].ToString());
+        }
+
+        return json["response"];
+    }
+
+    private async Task<JToken> GetPlayerStatsAsync(string matchId, string teamId)
+    {
+        await _rateLimiter.WaitForNextRequestAsync();
+        string url = $"https://v3.football.api-sports.io/fixtures/players?fixture={matchId}&team={teamId}";
+        var response = await _httpClient.GetStringAsync(url);
+        JObject json = JObject.Parse(response);
+
+        if (json["errors"].Count() > 0)
+        {
+            throw new Exception(json["errors"].ToString());
+        }
+
+        return json["response"];
+    }
+
+    private int GetStatValue(JToken stats, string statType)
+    {
+        var stat = stats.FirstOrDefault(s => s["type"].ToString() == statType);
+        return stat != null && stat["value"].Type != JTokenType.Null ? (int)stat["value"] : 0;
+    }
+
+    private void InitializeCacheManager()
+    {
+        if (_localCacheManagerMatchStats == null)
+        {
+            string cacheFilePath = Server.MapPath("~/App_Data/MatchStatsCache.json");
+            _localCacheManagerMatchStats = new LocalCacheManager(cacheFilePath);
+        }
+
+        if (_localCacheManagerMatchPlayerStats == null)
+        {
+            string cacheFilePath = Server.MapPath("~/App_Data/PlayerStatsCache.json");
+            _localCacheManagerMatchPlayerStats = new LocalCacheManager(cacheFilePath);
+        }
     }
 }

@@ -1,0 +1,117 @@
+﻿@model BetStats.Models.MatchDetail
+
+@if (Model != null)
+{
+    if (Model.Team1Stats == null || Model.Team2Stats == null || Model.MatchStats == null)
+    {
+        <p>Statistiche del match non disponibili</p>
+    }
+    else
+    {
+        // Estrai i nomi delle squadre dal campo Matchup
+        var teams = Model.Matchup.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+
+        <table id="statsTable" class="display">
+            <thead>
+                <tr>
+                    <th />
+                    <th>@teams[0]</th>
+                    <th>@teams[1]</th>
+                    <th>Statistiche complessive</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight: bold;">Calci d'angolo</td>
+                    <td>@Model.Team1Stats.CornerKicks</td>
+                    <td>@Model.Team2Stats.CornerKicks</td>
+                    <td>@Model.MatchStats.CornerKicks</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Tiri</td>
+                    <td>@Model.Team1Stats.TotalShots</td>
+                    <td>@Model.Team2Stats.TotalShots</td>
+                    <td>@Model.MatchStats.TotalShots</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Tiri in porta</td>
+                    <td>@Model.Team1Stats.ShotsOnGoal</td>
+                    <td>@Model.Team2Stats.ShotsOnGoal</td>
+                    <td>@Model.MatchStats.ShotsOnGoal</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Tiri fuori</td>
+                    <td>@Model.Team1Stats.ShotsOffGoal</td>
+                    <td>@Model.Team2Stats.ShotsOffGoal</td>
+                    <td>@Model.MatchStats.ShotsOffGoal</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Parate</td>
+                    <td>@Model.Team1Stats.GoalkeeperSaves</td>
+                    <td>@Model.Team2Stats.GoalkeeperSaves</td>
+                    <td>@Model.MatchStats.GoalkeeperSaves</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Falli</td>
+                    <td>@Model.Team1Stats.Fouls</td>
+                    <td>@Model.Team2Stats.Fouls</td>
+                    <td>@Model.MatchStats.Fouls</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Cartellini</td>
+                    <td>@Model.Team1Stats.TotalCards</td>
+                    <td>@Model.Team2Stats.TotalCards</td>
+                    <td>@Model.MatchStats.TotalCards</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Cartellini gialli</td>
+                    <td>@Model.Team1Stats.YellowCards</td>
+                    <td>@Model.Team2Stats.YellowCards</td>
+                    <td>@Model.MatchStats.YellowCards</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Cartellini rossi</td>
+                    <td>@Model.Team1Stats.RedCards</td>
+                    <td>@Model.Team2Stats.RedCards</td>
+                    <td>@Model.MatchStats.RedCards</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Fuorigioco</td>
+                    <td>@Model.Team1Stats.Offsides</td>
+                    <td>@Model.Team2Stats.Offsides</td>
+                    <td>@Model.MatchStats.Offsides</td>
+                </tr>
+            </tbody>
+        </table>
+    }
+}
+else
+{
+    <p>Statistiche del match non disponibili</p>
+}
+
+<script>
+    $(document).ready(function () {
+
+        $('#statsTable').DataTable({
+            "paging": false,
+            "ordering": true,
+            "info": false,
+            "searching": true,
+            "orderCellsTop": true,
+            "language": {
+                "search": "Cerca:",
+                "lengthMenu": "Mostra _MENU_ record per pagina",
+                "zeroRecords": "Nessun record trovato",
+                "info": "Pagina _PAGE_ di _PAGES_",
+                "infoEmpty": "Nessun record disponibile",
+                "infoFiltered": "(filtrati da _MAX_ record totali)"
+            }
+        });
+    });
+</script>
+
+
+
+
+
