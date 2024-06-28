@@ -22,61 +22,61 @@
             </thead>
             <tbody>
                 <tr>
-                    <td style="font-weight: bold;">Calci d'angolo</td>
+                    <td style="font-weight: bold;">CORNER</td>
                     <td>@Model.Team1Stats.CornerKicks</td>
                     <td>@Model.Team2Stats.CornerKicks</td>
                     <td>@Model.MatchStats.CornerKicks</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Tiri</td>
+                    <td style="font-weight: bold;">TIRI TOTALI</td>
                     <td>@Model.Team1Stats.TotalShots</td>
                     <td>@Model.Team2Stats.TotalShots</td>
                     <td>@Model.MatchStats.TotalShots</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Tiri in porta</td>
+                    <td style="font-weight: bold;">TIRI IN PORTA</td>
                     <td>@Model.Team1Stats.ShotsOnGoal</td>
                     <td>@Model.Team2Stats.ShotsOnGoal</td>
                     <td>@Model.MatchStats.ShotsOnGoal</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Tiri fuori</td>
+                    <td style="font-weight: bold;">TIRI FUORI DALLO SPECCHIO</td>
                     <td>@Model.Team1Stats.ShotsOffGoal</td>
                     <td>@Model.Team2Stats.ShotsOffGoal</td>
                     <td>@Model.MatchStats.ShotsOffGoal</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Parate</td>
+                    <td style="font-weight: bold;">PARATE DEL PORTIERE</td>
                     <td>@Model.Team1Stats.GoalkeeperSaves</td>
                     <td>@Model.Team2Stats.GoalkeeperSaves</td>
                     <td>@Model.MatchStats.GoalkeeperSaves</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Falli</td>
+                    <td style="font-weight: bold;">FALLI COMMESSI</td>
                     <td>@Model.Team1Stats.Fouls</td>
                     <td>@Model.Team2Stats.Fouls</td>
                     <td>@Model.MatchStats.Fouls</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Cartellini</td>
+                    <td style="font-weight: bold;">CARTELLI TOTALI</td>
                     <td>@Model.Team1Stats.TotalCards</td>
                     <td>@Model.Team2Stats.TotalCards</td>
                     <td>@Model.MatchStats.TotalCards</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Cartellini gialli</td>
+                    <td style="font-weight: bold;">CARTELLINI GIALLI</td>
                     <td>@Model.Team1Stats.YellowCards</td>
                     <td>@Model.Team2Stats.YellowCards</td>
                     <td>@Model.MatchStats.YellowCards</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Cartellini rossi</td>
+                    <td style="font-weight: bold;">CARTELLINI ROSSI</td>
                     <td>@Model.Team1Stats.RedCards</td>
                     <td>@Model.Team2Stats.RedCards</td>
                     <td>@Model.MatchStats.RedCards</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Fuorigioco</td>
+                    <td style="font-weight: bold;">FUORIGIOCO</td>
                     <td>@Model.Team1Stats.Offsides</td>
                     <td>@Model.Team2Stats.Offsides</td>
                     <td>@Model.MatchStats.Offsides</td>
@@ -98,7 +98,7 @@ else
             "ordering": true,
             "info": false,
             "searching": true,
-            "orderCellsTop": true,
+            "order": [], // Disabilita l'ordinamento iniziale
             "language": {
                 "search": "Cerca:",
                 "lengthMenu": "Mostra _MENU_ record per pagina",
